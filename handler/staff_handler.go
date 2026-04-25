@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"hospital-middleware/middleware"
 	"hospital-middleware/models"
@@ -67,9 +68,17 @@ func (h *StaffHandler) CreateStaff(c *gin.Context) {
 	}
 
 	if err := h.staffRepo.Create(staff); err != nil {
-		c.JSON(http.StatusConflict, models.ErrorResponse{
-			Status:  http.StatusConflict,
-			Message: "Username already exists in this hospital.",
+		if strings.Contains(err.Error(), "UNIQUE constraint failed") || strings.Contains(err.Error(), "duplicate key") {
+			c.JSON(http.StatusConflict, models.ErrorResponse{
+				Status:  http.StatusConflict,
+				Message: "Username already exists in this hospital.",
+			})
+			return
+		}
+		
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Status:  http.StatusInternalServerError,
+			Message: "Failed to create staff record.",
 		})
 		return
 	}
